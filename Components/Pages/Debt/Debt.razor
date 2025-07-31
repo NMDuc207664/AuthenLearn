@@ -65,5 +65,11 @@ else if (Type == ExpenseType.PayOffDebt)
     {
         await iDebtService.UpdateDebt(Debt_1);
     }
+    public async Task UpdateListDebts(List<Model.Debt> debts)
+    {
+        ListDebts = debts;
+        Console.WriteLine($"UpdateListDebts called with {debts?.Count ?? 0} debts");
+        StateHasChanged();
+    }
 }
 @using AuthenLearn.Applications.Interfaces.ServicesInterfaces;

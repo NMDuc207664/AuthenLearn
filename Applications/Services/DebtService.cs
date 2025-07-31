@@ -40,11 +40,15 @@ namespace AuthenLearn.Applications.Services
             var allDebt = await _iDebtRepository.GetAllUserDebt(userId);
             if (isPaid)
             {
-                return allDebt.Where(d => d.IsPaid).ToList();
+                var paidDebts = allDebt.Where(d => d.IsPaid).ToList();
+                Console.WriteLine($"Paid debts: {paidDebts.Count}");
+                return paidDebts;
             }
             else
             {
-                return allDebt.Where(d => !d.IsPaid).ToList();
+                var unpaidDebts = allDebt.Where(d => !d.IsPaid).ToList();
+                Console.WriteLine($"Unpaid debts: {unpaidDebts.Count}");
+                return unpaidDebts;
             }
         }
 

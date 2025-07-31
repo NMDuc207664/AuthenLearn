@@ -16,6 +16,7 @@ namespace AuthenLearn.Data.Repositories
         public async Task<List<Debt>> GetAllUserDebt(Guid userId)
         {
             return await _context.Debts
+            .Include(d => d.Expenses)
             .Where(d => d.UserId == userId)
             .ToListAsync();
         }

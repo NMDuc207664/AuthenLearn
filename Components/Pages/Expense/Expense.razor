@@ -79,7 +79,7 @@
 
             @if (exp.Type == ExpenseType.Debt || exp.Type == ExpenseType.PayOffDebt)
             {
-                <Debt @ref="debtComponent" Type="exp.Type" Debt_1="exp.Debt" UserId="@UserId" />
+                <Debt @ref="debtComponent" Type="exp.Type" Debt_1="exp.Debt" UserId="@UserId" ListDebts="@listDebt" />
             }
 
         </FormBody>
@@ -138,7 +138,7 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     private PagedResult<Model.Expense> pagedResult1;
     private List<Model.Debt> listDebt;
     private Debt debtComponent;
-    private void OpenAddDialog()
+    private async void OpenAddDialog()
     {
         isEditMode = false;
         Exp = new Model.Expense()
@@ -147,6 +147,8 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
             Debt = new Model.Debt()
         };
         showDialog = true;
+        await ListOfAllUnpaidDebt();
+        StateHasChanged(); // Force re-render
     }
     private void CloseAddAndEditDialog()
     {
@@ -340,14 +342,17 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     private async Task ListOfAllUnpaidDebt()
     {
         var list = await iDebtService.GetAllUserDebt(UserId, false);
-        listDebt = list;
-    }
-    private void HandleTypeChange(ChangeEventArgs e)
-    {
-        if (Enum.TryParse<ExpenseType>(e.Value?.ToString(), out var newType))
+        Console.WriteLine($"Service returned {list.Count} unpaid debts");
+        foreach (var debt in list)
         {
-            Exp.Type = newType;
-            StateHasChanged(); // ép render lại
+            Console.WriteLine($"Debt: {debt.Id} - {debt.Owner} - {debt.TotalAmountOfDebt}");
         }
+
+        listDebt = list;
+        if (debtComponent != null)
+        {
+            await debtComponent.UpdateListDebts(listDebt);
+        }
+        StateHasChanged();
     }
 }

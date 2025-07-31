@@ -219,3 +219,4 @@ C:\Users\DucNguyenMinh\OneDrive - NASHTECH\Desktop\AuthenLearn\bin\Debug\net9.0\
 C:\Users\DucNguyenMinh\OneDrive - NASHTECH\Desktop\AuthenLearn\bin\Debug\net9.0\Microsoft.AspNetCore.Metadata.dll
 C:\Users\DucNguyenMinh\OneDrive - NASHTECH\Desktop\AuthenLearn\bin\Debug\net9.0\Microsoft.Extensions.ObjectPool.dll
 C:\Users\DucNguyenMinh\OneDrive - NASHTECH\Desktop\AuthenLearn\bin\Debug\net9.0\Microsoft.JSInterop.dll
+C:\Users\DucNguyenMinh\OneDrive - NASHTECH\Desktop\AuthenLearn\obj\Debug\net9.0\AuthenLearn.sourcelink.json
