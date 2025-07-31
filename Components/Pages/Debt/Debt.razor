@@ -1,0 +1,69 @@
+@using AuthenLearn.Model
+@using AuthenLearn.Model.Enum
+@using Microsoft.AspNetCore.Components.Forms
+@inject IDebtService iDebtService
+@rendermode InteractiveServer
+@* <div style="background: red; height: 200px;">XYZ TEST</div> *@
+@if (Type == ExpenseType.Debt)
+{
+    <div class="mb-3">
+        <label class="form-label">Chủ nợ</label>
+        <InputText class="form-control" @bind-Value="Debt_1.Owner" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Số tiền nợ</label>
+        <InputNumber class="form-control" @bind-Value="Debt_1.TotalAmountOfDebt" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Mô tả</label>
+        <InputText class="form-control" @bind-Value="Debt_1.Description" />
+    </div>
+    @* <div class="px-3 mb-3">
+        Testing 123123213
+    </div> *@
+}
+else if (Type == ExpenseType.PayOffDebt)
+{
+    @* <div class="mb-3">
+        <label class="form-label">Chọn khoản nợ để trả</label>
+        <InputSelect class="form-control" @bind-Value="SelectedDebtId">
+            <option value="">-- Chọn khoản nợ --</option>
+            @foreach (var item in ListDebts)
+            {
+                <option value="@item.Id">@item.Owner - @item.TotalAmountOfDebt đ</option>
+            }
+        </InputSelect>
+    </div> *@
+    <select class="form-select" @bind="SelectedDebtId">
+        @if (ListDebts == null || !ListDebts.Any())
+        {
+            <option disabled>Không có khoản nợ nào để trả</option>
+        }
+        else
+        {
+            @foreach (var debt in ListDebts)
+            {
+                <option value="@debt.Id">@debt.Owner - @debt.TotalAmountOfDebt đ</option>
+            }
+        }
+    </select>
+}
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+    [Parameter] public ExpenseType Type { get; set; }
+    [Parameter] public Model.Debt Debt_1 { get; set; } = new();
+    [Parameter] public Guid? SelectedDebtId { get; set; }
+    [Parameter] public EventCallback<Guid> SelectedDebtIdChanged { get; set; }
+    [Parameter] public List<Model.Debt>? ListDebts { get; set; } = new();
+
+    public Guid AddDebtFE()
+    {
+        return iDebtService.AddDebt(Debt_1, UserId);
+    }
+    public async Task UpdateDebtFE()
+    {
+        await iDebtService.UpdateDebt(Debt_1);
+    }
+}
+@using AuthenLearn.Applications.Interfaces.ServicesInterfaces;

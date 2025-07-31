@@ -1,0 +1,353 @@
+@page "/user/expense"
+@using AuthenLearn.Applications.DTOs.Response
+@using AuthenLearn.Applications.Extensions
+@using AuthenLearn.Applications.Interfaces
+@using AuthenLearn.Data.Common
+@using AuthenLearn.Data.Common.QueryParameters
+@using System.Security.Claims
+@using AuthenLearn.Applications.Interfaces.ServicesInterfaces
+@using AuthenLearn.Model.Enum
+@using AuthenLearn.Model.ViewModel
+@using AuthenLearn.Components.Pages.Debt
+@inject NavigationManager navigationManager
+@inject IExpenseService iExpenseService
+@inject IDebtService iDebtService
+@inject AuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
+
+<div>
+    <GenericPagination OnFilterChanged="OnFilterChanged" TotalPages="TotalPages" Filter=true CustomOptions="MyOptions"
+        ParentHandleCustomOption="HandleCustomOption">
+        <FormBody>
+            <div class="d-flex flex-row-reverse bd-highlight px-2">
+                <button @onclick="OpenAddDialog" class="border-0 bg-transparent p-0 shadow-none focus:outline-none ">
+                    <LucideIcon Name="CirclePlus" Size=21 class="text-success" />
+                </button>
+            </div>
+            <GenericTable Title="@Title" TEntity="Model.Expense" PagedResult="pagedResult1" RowHeaders="headers">
+                <RowTemplate>
+                    @{
+                        var exp = context;
+                    }
+                    <td class="border px-4 py-2">@exp.Description</td>
+                    <td class="border px-4 py-2">@exp.Amount.ToString("N0")</td>
+                    <td class="border px-4 py-2">@exp.Date.ToShortDateString()</td>
+                    <td class="border px-4 py-2">@exp.Type.ToString()</td>
+                    <td class="border px-4 py-2">
+                        <button class="btn btn-sm btn-primary me-1" @onclick="@(() => EditExpense(exp))">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="@(() => OpenDeleteDialog(exp))">Delete</button>
+                    </td>
+
+                </RowTemplate>
+            </GenericTable>
+        </FormBody>
+    </GenericPagination>
+
+    <GenericAddAndEditCardForm TEntity="Model.Expense" IsEditMode="@isEditMode" Entity="@Exp" Show="@showDialog"
+        OnCancel="@CloseAddAndEditDialog" OnConfirm="@(EventCallback.Factory.Create(this, HandleConfirm))">
+        <FormBody>
+            @{
+                var exp = context;
+            }
+            <div class="mb-3">
+                <label class="form-label">Mô tả</label>
+                <InputText class="form-control" @bind-Value="exp.Description" placeholder="Nhập mô tả..." />
+                <ValidationMessage For="@(() => exp.Description)" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Số tiền</label>
+                <InputNumber class="form-control" @bind-Value="exp.Amount" placeholder="Nhập số tiền..." />
+                <ValidationMessage For="@(() => exp.Amount)" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Ngày</label>
+                <InputDate class="form-control" @bind-Value="exp.Date" />
+                <ValidationMessage For="@(() => exp.Date)" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Type</label>
+                <InputSelect class="form-control" @bind-Value="exp.Type" disabled="@isEditMode">
+                    @foreach (var type in Enum.GetValues(typeof(ExpenseType)).Cast<ExpenseType>())
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => exp.Date)" class="text-danger" />
+            </div>
+
+            @if (exp.Type == ExpenseType.Debt || exp.Type == ExpenseType.PayOffDebt)
+            {
+                <Debt @ref="debtComponent" Type="exp.Type" Debt_1="exp.Debt" UserId="@UserId" />
+            }
+
+        </FormBody>
+    </GenericAddAndEditCardForm>
+
+</div>
+
+
+<GenericDeleteCardForm TEntity="Model.Expense" Entity="@Exp" Show="@showDeleteDialog" OnCancel="CloseDeleteDialog"
+    OnConfirm="@(()=> DeleteExpense(Exp.Id))">
+    <FormBody>
+        @{
+            var exp = context;
+        }
+        <div class="d-flex align-items-center">
+            <span class="fw-bold me-2">Id:</span>
+            <span class="me-4">@exp.Id</span>
+        </div>
+        <div class="d-flex align-items-center">
+            <span class="fw-bold me-2">Mô tả:</span>
+            <span>@exp.Description</span>
+            <span class="fw-bold me-2 ms-5">Ngày:</span>
+            <span class="">@exp.Date.ToShortDateString()</span>
+        </div>
+    </FormBody>
+</GenericDeleteCardForm>
+@* <div>
+    <ExpenseStatistical userId="@UserId"></ExpenseStatistical>
+</div> *@
+
+@code
+{
+    private string Title { get; set; }
+    private List<string> headers = new() { "Mô tả", "Số tiền", "Ngày", "Hành động", "Hành động", "Hành động", "Hành động" };
+    private List<CustomDropdownOption> MyOptions = new()
+{
+new() { Value = "this_month", Text = "Tháng này" },
+new() { Value = "last_month", Text = "Tháng trước" },
+new() { Value = "this_year", Text = "Năm nay" },
+new() { Value = "last_year", Text = "Năm ngoái" },
+new() { Value = "Dư nợ", Text = "Dư nợ" }
+};
+    private bool isEditMode = false;
+    private bool showDialog = false;
+    private bool showDeleteDialog = false;
+    private Guid UserId { get; set; }
+    private AuthenLearn.Model.Expense Exp { get; set; } = new Model.Expense();
+    private List<AuthenLearn.Model.Expense> Expenses = new();
+    public int PageIndex { get; set; } = 1;
+    public int PageSize { get; set; } = 15;
+    public int? Year { get; set; }
+    public int? Month { get; set; }
+    public int? Day { get; set; }
+    private int TotalItems { get; set; }
+    private int TotalPages { get; set; }
+    private PagedResult<Model.Expense> pagedResult1;
+    private List<Model.Debt> listDebt;
+    private Debt debtComponent;
+    private void OpenAddDialog()
+    {
+        isEditMode = false;
+        Exp = new Model.Expense()
+        {
+            Date = DateTime.Today,
+            Debt = new Model.Debt()
+        };
+        showDialog = true;
+    }
+    private void CloseAddAndEditDialog()
+    {
+        showDialog = false;
+        StateHasChanged();
+    }
+    private void OpenDeleteDialog(Model.Expense expense)
+    {
+        Exp = expense;
+        showDeleteDialog = true;
+    }
+    private void CloseDeleteDialog()
+    {
+        showDeleteDialog = false;
+        StateHasChanged();
+    }
+    public async Task AddExpense()//khi bấm add thì chạy
+    {
+        if (Exp.Type == ExpenseType.Debt)
+        {
+            var debtId = debtComponent.AddDebtFE();
+
+            // Gán DebtId vào Expense
+            Exp.DebtId = debtId;
+
+            // Gán debt object vào expense để hiển thị
+            Exp.Debt = new Model.Debt
+            {
+                Id = debtId,
+                Owner = debtComponent.Debt_1.Owner,
+                Description = debtComponent.Debt_1.Description,
+                TotalAmountOfDebt = debtComponent.Debt_1.TotalAmountOfDebt,
+                IsPaid = false
+            };
+        }
+        iExpenseService.AddExpense(Exp, UserId);
+        await LoadExpensesAsync();
+        if (Exp.Type == ExpenseType.PayOffDebt)
+        {
+            await ListOfAllUnpaidDebt();
+        }
+        showDialog = false;
+        StateHasChanged();
+    }
+    private void EditExpense(Model.Expense expense)//tạo bản copy để không làm hỏng object gốc chỉ khi bật dialog
+    {
+        isEditMode = true;
+        Exp = new Model.Expense
+        {
+            Id = expense.Id,
+            Description = expense.Description,
+            Amount = expense.Amount,
+            Date = expense.Date,
+            Type = expense.Type,
+            Debt = expense.Debt != null ? new Model.Debt
+            {
+                Id = expense.Debt.Id,
+                Owner = expense.Debt.Owner,
+                TotalAmountOfDebt = expense.Debt.TotalAmountOfDebt,
+                Description = expense.Debt.Description,
+                IsPaid = expense.Debt.IsPaid
+            } : new Model.Debt(),
+        };
+        if (expense.Type == ExpenseType.PayOffDebt)
+        {
+            Exp.DebtId = expense.DebtId;
+        }
+
+        showDialog = true;
+    }
+    private async Task UpdateExpense()//khi bấm update thì chạy
+    {
+        await iExpenseService.UpdateExpense(Exp);
+        await LoadExpensesAsync();
+        showDialog = false;
+        StateHasChanged();
+    }
+    public async Task DeleteExpense(Guid expenseId)
+    {
+
+        await iExpenseService.DeleteExpense(Exp.Id);
+        Expenses.RemoveAll(e => e.Id == expenseId);
+        await LoadExpensesAsync();
+        showDeleteDialog = false;
+        StateHasChanged();
+    }
+    private async Task LoadExpensesAsync()
+    {
+        var query = new ExpenseQueryParameter
+        {
+            PageIndex = this.PageIndex,
+            PageSize = this.PageSize,
+            Year = this.Year,
+            Month = this.Month,
+            Day = this.Day
+        };
+        pagedResult1 = await iExpenseService.GetBookByPagination(UserId, query);
+        Expenses = pagedResult1.Items.Select(r => new Model.Expense
+        {
+            Description = r.Description,
+            Amount = r.Amount,
+            Date = r.Date
+        }).ToList();
+        Title = pagedResult1.Title;
+        TotalItems = pagedResult1.TotalItems;
+        TotalPages = (int)Math.Ceiling((double)TotalItems / PageSize);
+        Console.WriteLine("Totalpage: " + TotalPages);
+        Console.WriteLine("Totalitems: " + TotalItems);
+    }
+    private async Task HandleConfirm()
+    {
+        if (isEditMode)
+            await UpdateExpense();
+        else
+            await AddExpense();
+    }
+    private async Task OnFilterChanged(ExpenseQueryParameter filter)
+    {
+        PageIndex = filter.PageIndex;
+        PageSize = filter.PageSize;
+        Year = filter.Year;
+        Month = filter.Month;
+        Day = filter.Day;
+
+        await LoadExpensesAsync();
+        StateHasChanged();
+    }
+    private async Task HandleCustomOption(string? key)
+    {
+        var now = DateTime.Now;
+
+        switch (key)
+        {
+            case "this_year":
+                Year = now.Year;
+                Month = null;
+                Day = null;
+                break;
+
+            case "last_year":
+                Year = now.Year - 1;
+                Month = null;
+                Day = null;
+                break;
+
+            case "last_month":
+                var lastMonth = now.AddMonths(-1);
+                Year = lastMonth.Year;
+                Month = lastMonth.Month;
+                Day = null;
+                break;
+            case "this_month":
+                Year = now.Year;
+                Month = now.Month;
+                Day = null;
+                break;
+            default:
+                return;
+        }
+
+        PageIndex = 1;
+        var query = new ExpenseQueryParameter
+        {
+            PageIndex = PageIndex,
+            PageSize = PageSize,
+            Year = Year,
+            Month = Month,
+            Day = Day
+        };
+        await OnFilterChanged(query);
+        @* await LoadExpensesAsync(); *@
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated ?? false)
+        {
+            var userIdClaim = user.FindFirst("userid") ?? user.FindFirst(ClaimTypes.NameIdentifier) ?? user.FindFirst("user_id");
+
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                UserId = userId;
+                await LoadExpensesAsync();
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task ListOfAllUnpaidDebt()
+    {
+        var list = await iDebtService.GetAllUserDebt(UserId, false);
+        listDebt = list;
+    }
+    private void HandleTypeChange(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<ExpenseType>(e.Value?.ToString(), out var newType))
+        {
+            Exp.Type = newType;
+            StateHasChanged(); // ép render lại
+        }
+    }
+}

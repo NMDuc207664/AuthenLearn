@@ -1,0 +1,84 @@
+@page "/test-dialog"
+@using Microsoft.Extensions.Logging
+@inject ILogger<TestDialog> Logger
+@rendermode InteractiveServer
+
+<PageTitle>Test Dialog</PageTitle>
+
+<div style="padding: 2rem;">
+    <h1>Test Dialog Page</h1>
+
+    <div style="margin: 2rem 0;">
+        <button class="btn btn-primary" @onclick="OpenDialog">
+            Mở Dialog
+        </button>
+
+        <p style="margin-top: 1rem;">
+            Status: Dialog hiện tại @(showDialog ? "đang mở" : "đã đóng")
+        </p>
+    </div>
+
+    <!-- Simple Dialog Component -->
+    <AuthenLearn.Components.Common.SimpleDIalog Show="@showDialog" Title="Dialog Test" OnCancel="@CloseDialog"
+        OnConfirm="@ConfirmDialog">
+        <div>
+            <p>Đây là nội dung của dialog!</p>
+            <p>Bạn có thể đặt bất kỳ nội dung nào ở đây.</p>
+            <p><strong>Thời gian:</strong> @DateTime.Now.ToString("HH:mm:ss")</p>
+        </div>
+    </AuthenLearn.Components.Common.SimpleDIalog>
+</div>
+
+<style>
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        border: 1px solid;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        background: none;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    }
+</style>
+
+@code {
+    private bool showDialog = false;
+
+    private void OpenDialog()
+    {
+        showDialog = true;
+        Logger.LogInformation("Dialog opened at {Time}", DateTime.Now);
+        Console.WriteLine($"Dialog opened - showDialog: {showDialog}");
+        StateHasChanged();
+    }
+
+    private void CloseDialog()
+    {
+        showDialog = false;
+        Logger.LogInformation("Dialog closed at {Time}", DateTime.Now);
+        Console.WriteLine($"Dialog closed - showDialog: {showDialog}");
+        StateHasChanged();
+    }
+
+    private void ConfirmDialog()
+    {
+        Logger.LogInformation("Dialog confirmed at {Time}", DateTime.Now);
+        Console.WriteLine("Dialog confirmed!");
+        showDialog = false;
+        StateHasChanged();
+    }
+}

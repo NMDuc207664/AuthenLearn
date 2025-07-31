@@ -1,0 +1,32 @@
+@inject NavigationManager navigationManager
+@page "/logout"
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body flex-column">
+                <div class="text-center">
+                    Logout
+                </div>
+                <div class="text-center mt-2">
+                    <span class="text-danger fw-bolder">You've Successfully Logged out of the application</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public HttpContext HttpContext { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (HttpContext.User.Identity.IsAuthenticated)
+        {
+            await HttpContext.SignOutAsync();
+            navigationManager.NavigateTo("/login", true);
+        }
+    }
+}
+@using Microsoft.AspNetCore.Authentication;

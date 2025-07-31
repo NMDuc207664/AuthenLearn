@@ -1,0 +1,47 @@
+@typeparam TEntity
+@using AuthenLearn.Components.Pages.Debt
+@* @rendermode InteractiveServer *@
+@if (Show)
+{
+    <div class="modal-overlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;">
+        <div class="card" style="width: 24rem; max-width: 90%; margin: auto; transition: all 0.3s ease;">
+            <div class="card-body">
+                <h5 class="card-title">@Title</h5>
+                <EditForm Model="@Entity" OnValidSubmit="OnConfirm">
+                    <DataAnnotationsValidator />
+
+                    @if (FormBody != null)
+                    {
+                        @FormBody(Entity)
+                    }
+
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" @onclick="OnCancel">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            @SubmitButton
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    [Parameter]
+    public bool Show { get; set; }
+    [Parameter]
+    public bool IsEditMode { get; set; } = false;
+    private string Title => IsEditMode ? "Edit Customer" : "Add New Customer";
+    private string SubmitButton => IsEditMode ? "Update" : "Create";
+    [Parameter]
+    public TEntity Entity { get; set; } = default;
+    [Parameter] public RenderFragment<TEntity>? FormBody { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+}

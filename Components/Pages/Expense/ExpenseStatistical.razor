@@ -1,0 +1,193 @@
+@page "/total"
+@using AuthenLearn.Applications.DTOs.Response
+@using AuthenLearn.Applications.Interfaces
+@using AuthenLearn.Data.Common
+@using AuthenLearn.Data.Common.QueryParameters
+@using System.Security.Claims
+@using AuthenLearn.Applications.Interfaces.ServicesInterfaces
+@using AuthenLearn.Model.Enum
+@using AuthenLearn.Model.ViewModel
+@using AuthenLearn.Components.Pages.Debt
+@inject IExpenseService iExpenseService
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Quản lý Chi tiêu và Nợ</h4>
+        </div>
+        <div class="card-body">
+            <!-- Form Controls -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Loại báo cáo:</label>
+                    <select class="form-select" @bind="SelectedKey">
+                        <option value="spent_year">Chi tiêu theo năm</option>
+                        <option value="spent_month_year">Chi tiêu theo tháng/năm</option>
+                        <option value="remaining_debt_by_year">Nợ còn lại theo năm</option>
+                        <option value="remaining_debt_by_month_year">Nợ còn lại theo tháng/năm</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Chọn thời gian:</label>
+                    <input type="date" class="form-control" @bind="SelectedDate" />
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <button class="btn btn-primary me-2" @onclick="GetExpenseData" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        Lấy dữ liệu
+                    </button>
+                    <button class="btn btn-info" @onclick="LoadSummary" disabled="@isLoading">
+                        Tải tóm tắt tháng hiện tại
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Display -->
+            @if (!string.IsNullOrEmpty(resultMessage))
+            {
+                <div class="alert alert-success">
+                    <h5>Kết quả:</h5>
+                    <p class="mb-0">@resultMessage</p>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(totalPayThisYear) || !string.IsNullOrEmpty(totalDebtThisYear))
+            {
+                <div class="alert alert-info">
+                    <h5>Tóm tắt tháng hiện tại:</h5>
+                    @if (!string.IsNullOrEmpty(totalPayThisYear))
+                    {
+                        <p class="mb-1">@totalPayThisYear</p>
+                    }
+                    @if (!string.IsNullOrEmpty(totalDebtThisYear))
+                    {
+                        <p class="mb-0">@totalDebtThisYear</p>
+                    }
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">
+                    <h5>Lỗi:</h5>
+                    <p class="mb-0">@errorMessage</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid userId { get; set; }
+
+    public List<string> ExpenseKeys { get; set; } = new()
+{
+"spent_year",
+"spent_month_year",
+"remaining_debt_by_year",
+"remaining_debt_by_month_year"
+};
+
+    public string totalPayThisYear { get; set; }
+    public string totalDebtThisYear { get; set; }
+    public string SelectedKey { get; set; } = "spent_month_year";
+    public DateTime SelectedDate { get; set; } = DateTime.Now;
+    public string resultMessage { get; set; }
+    public string errorMessage { get; set; }
+    public bool isLoading { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load summary khi component được khởi tạo
+        await LoadSummary();
+    }
+
+    public async Task GetExpenseData()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = "";
+            resultMessage = "";
+            StateHasChanged();
+
+            var result = await iExpenseService.GetAllExpensesByCondition(userId, SelectedKey, SelectedDate);
+
+            if (result != null)
+            {
+                string keyDisplayName = GetKeyDisplayName(SelectedKey);
+                string timeFormat = GetTimeFormat(SelectedKey, SelectedDate);
+
+                resultMessage = $"{keyDisplayName} {timeFormat}: {result.TotalAmount:N0} đ";
+            }
+            else
+            {
+                resultMessage = "Không có dữ liệu";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Có lỗi xảy ra: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public async Task LoadSummary()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = "";
+            StateHasChanged();
+
+            var now = DateTime.Now;
+            var pay = await iExpenseService.GetAllExpensesPayByMonth(userId, now.Year, now.Month);
+            var debt = await iExpenseService.GetAllRemainingDebtByMonth(userId, now.Year, now.Month);
+
+            totalPayThisYear = $"Số tiền tiêu trong tháng {now.Month} năm {now.Year} là: {pay.TotalAmount:N0} đ";
+            totalDebtThisYear = $"Số tiền nợ còn lại trong tháng {now.Month} năm {now.Year} là: {debt.TotalAmount:N0} đ";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Có lỗi khi tải tóm tắt: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetKeyDisplayName(string key)
+    {
+        return key switch
+        {
+            "spent_year" => "Tổng chi tiêu trong năm",
+            "spent_month_year" => "Tổng chi tiêu trong tháng",
+            "remaining_debt_by_year" => "Tổng nợ còn lại trong năm",
+            "remaining_debt_by_month_year" => "Tổng nợ còn lại trong tháng",
+            _ => "Không xác định"
+        };
+    }
+
+    private string GetTimeFormat(string key, DateTime date)
+    {
+        return key switch
+        {
+            "spent_year" or "remaining_debt_by_year" => $"năm {date.Year}",
+            "spent_month_year" or "remaining_debt_by_month_year" => $"tháng {date.Month}/{date.Year}",
+            _ => date.ToString("dd/MM/yyyy")
+        };
+    }
+}

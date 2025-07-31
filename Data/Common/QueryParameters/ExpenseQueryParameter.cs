@@ -1,0 +1,9 @@
+namespace AuthenLearn.Data.Common.QueryParameters
+{
+    public class ExpenseQueryParameter : PaginationParameters
+    {
+        public int? Year { get; set; }
+        public int? Month { get; set; }
+        public int? Day { get; set; }
+    }
+}

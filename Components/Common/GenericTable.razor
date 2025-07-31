@@ -1,0 +1,59 @@
+@using AuthenLearn.Data.Common
+@typeparam TEntity
+
+<div class="w-full">
+    <h3 class="text-xl font-bold mb-4">@Title</h3>
+    @if (PagedResult is null || PagedResult.Items is null)
+    {
+        <p class="text-gray-500">Đang tải dữ liệu...</p>
+    }
+    else if (!PagedResult.Items.Any())
+    {
+        <p class="text-gray-500">Không có dữ liệu để hiển thị.</p>
+    }
+    else
+    {
+        <div class="" style="height: 500px; overflow-y: auto;">
+            <table class="min-w-full table-fixed border-collapse border border-gray-300 table table-hover">
+                <thead class="bg-gray-100 sticky top-0">
+                    <tr>
+                        @foreach (var header in RowHeaders)
+                        {
+                            <th class="border px-4 py-2 bg-gray-100">@header</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in PagedResult.Items)
+                    {
+                        <tr class="hover:bg-gray-50">
+                            @RowTemplate(item)
+                        </tr>
+                    }
+                    @* @if (PagedResult.Items.Count() < PageSize)
+                    {
+                        @for (int i = PagedResult.Items.Count(); i < PageSize; i++)
+                        {
+                            <tr style="height: 50px;">
+                                @foreach (var header in RowHeaders)
+                                {
+                                    <td class="border px-4 py-2">&nbsp;</td>
+                                }
+                            </tr>
+                        }
+                    } *@
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public PagedResult<TEntity>? PagedResult { get; set; }
+    public string EmptyMessage { get; set; } = "Không có dữ liệu.";
+    [Parameter] public List<string> RowHeaders { get; set; } = new();
+    [Parameter] public RenderFragment<TEntity> RowTemplate { get; set; } = default!;
+    [Parameter] public int PageSize { get; set; } = 15;
+
+}

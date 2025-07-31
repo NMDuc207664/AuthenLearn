@@ -1,0 +1,180 @@
+@using AuthenLearn.Applications.Interfaces
+@using AuthenLearn.Data.Common.QueryParameters
+@using AuthenLearn.Model
+@using AuthenLearn.Model.ViewModel
+@inject IExpenseRepository iExpenseRepository
+<div class="row g-2 mb-3">
+    <div class="col">
+        <input type="number" class="form-control" placeholder="Năm (VD: 2025)" @bind="query.Year" />
+    </div>
+    <div class="col">
+        <select class="form-control" @bind="query.Month">
+            <option value="">-- Tháng --</option>
+            @for (int i = 1; i <= 12; i++)
+            {
+                <option value="@i">@i</option>
+            }
+        </select>
+    </div>
+    <div class="col">
+        <select class="form-control" @bind="query.Day">
+            <option value="">-- Ngày --</option>
+            @for (int i = 1; i <= 31; i++)
+            {
+                <option value="@i">@i</option>
+            }
+        </select>
+    </div>
+    @* @if (Filter == true)
+    {
+        <div class="col">
+            <button class="btn btn-primary w-100" @onclick="ApplyDateFilter">Lọc</button>
+        </div>
+        <div class="col">
+            <select class="form-control" @onchange="HandleCustomDropdownChange">
+                <option value="">-- Tuỳ chọn nâng cao --</option>
+                @foreach (var option in CustomOptions)
+                {
+                    <option value="@option.Value">@option.Text</option>
+                }
+            </select>
+        </div>
+    } *@
+
+    @* @if (Filter == true)
+    {
+        <!-- Filter controls with pagination-style design -->
+        <div class="col-12 mt-3">
+            <div class="d-flex justify-content-center">
+                <nav aria-label="Filter controls">
+                    <ul class="pagination mb-0">
+                        <li class="page-item">
+                            <button class="page-link px-3" @onclick="ApplyDateFilter" title="Áp dụng bộ lọc">
+                                <i class="fas fa-filter me-1"></i>Lọc
+                            </button>
+                        </li>
+                        <li class="page-item">
+                            <div class="page-link p-0" style="background: transparent; border: none;">
+                                <select class="form-select border-0" style="min-width: 200px; background: transparent;"
+                                    @onchange="HandleCustomDropdownChange">
+                                    <option value="">-- Tuỳ chọn nâng cao --</option>
+                                    @foreach (var option in CustomOptions)
+                                    {
+                                        <option value="@option.Value">@option.Text</option>
+                                    }
+                                </select>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    } *@
+    @if (Filter == true)
+    {
+        <!-- Filter controls with pagination-style design -->
+        <div class="col-12 mt-3">
+            <div class="d-flex justify-content-center">
+                <nav aria-label="Filter controls">
+                    <ul class="pagination mb-0">
+                        <li class="page-item">
+                            <button class="page-link px-5 bg-primary text-white" @onclick="ApplyDateFilter"
+                                title="Áp dụng bộ lọc" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                                Lọc
+                            </button>
+                        </li>
+                        <li class="page-item">
+                            <div class="input-group" style="min-width: 200px;">
+                                <span class="input-group-text bg-transparent border-end-0"
+                                    style="border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none;">
+                                    <LucideIcon Name="settings" class="text-danger" Size="16" />
+                                </span>
+                                <select class="form-select border-start-0" @onchange="HandleCustomDropdownChange"
+                                    style="background: transparent; border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                    <option value="">-- Tuỳ chọn nâng cao --</option>
+                                    @foreach (var option in CustomOptions)
+                                    {
+                                        <option value="@option.Value">@option.Text</option>
+                                    }
+                                </select>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col">
+            <button class="btn btn-primary w-100" @onclick="ApplyDateFilter">Lọc</button>
+        </div>
+    }
+    @if (FormBody != null)
+    {
+        <div style="min-height: 400px;">
+            @FormBody
+        </div>
+    }
+    @if (TotalPages >= 1)
+    {
+        <div class="d-flex justify-content-center mt-4">
+            <nav aria-label="Page navigation">
+                <ul class="pagination mb-0">
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        int pageNumber = i; // Capture variable for closure
+                                            <li class="page-item @(i == query.PageIndex ? "active" : "")">
+                                                <button class="page-link" style="min-width: 40px;" @onclick="@(() => SelectPage(pageNumber))">
+                                                    @i
+                                                </button>
+                                            </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+@code {
+    [Parameter]
+    public bool Filter { get; set; }
+    private ExpenseQueryParameter query = new()
+    {
+        PageIndex = 1,
+        PageSize = 15,
+        Year = DateTime.Now.Year
+    };
+    [Parameter]
+    public RenderFragment? FormBody { get; set; }
+    [Parameter]
+    public EventCallback<ExpenseQueryParameter> OnFilterChanged { get; set; }
+    [Parameter]
+    public List<CustomDropdownOption> CustomOptions { get; set; } = new();
+    [Parameter]
+    public EventCallback<string> ParentHandleCustomOption { get; set; }
+
+    private string? SelectedCustomOption { get; set; }
+    private async Task ApplyDateFilter()
+    {
+        query.PageIndex = 1;
+        await OnFilterChanged.InvokeAsync(query);
+    }
+
+    [Parameter]
+    public int TotalPages { get; set; }
+    private int totalPages => TotalPages;
+    private async Task SelectPage(int page)
+    {
+        query.PageIndex = page;
+        await OnFilterChanged.InvokeAsync(query);
+        StateHasChanged();
+    }
+    private async Task HandleCustomDropdownChange(ChangeEventArgs e)
+    {
+        SelectedCustomOption = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(SelectedCustomOption))
+        {
+            await ParentHandleCustomOption.InvokeAsync(SelectedCustomOption);
+        }
+    }
+}

@@ -1,0 +1,85 @@
+@page "/register"
+@inject AppDbContext appDbContext
+@inject IGenericRepository<UserAccount> genericRepository
+@inject NavigationManager navigationManager
+
+<div class="row">
+    <div class="col-lg-4 offset-lg-4 pt-8 pb-8 border">
+        <EditForm Model="@UserAccount" OnValidSubmit="RegisterUser" FormName="LoginForm">
+            <DataAnnotationsValidator />
+            <div class="mb-3 text-center flex-column mt-3">
+                <h3>REGISTER</h3>
+            </div>
+            <div class="mb-3">
+                <label>Fullname</label>
+                <InputText @bind-Value="UserAccount.Name" class="form-control" aria-placeholder="Fullname" />
+                <ValidationMessage For="() => UserAccount.Name" />
+            </div>
+            <div class="mb-3">
+                <label>Email</label>
+                <InputText @bind-Value="UserAccount.Email" class="form-control" aria-placeholder="Email" />
+                <ValidationMessage For="() => UserAccount.Email" />
+            </div>
+            <div class="mb-3">
+                <label>Username</label>
+                <InputText @bind-Value="UserAccount.UserName" class="form-control" aria-placeholder="Username" />
+                <ValidationMessage For="() => UserAccount.UserName" />
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <InputText @bind-Value="UserAccount.Password" type="password" class="form-control"
+                    aria-placeholder="Password" />
+                <ValidationMessage For="() => UserAccount.Password" />
+            </div>
+            <div class="mb-3">
+                <label>Phone Number</label>
+                <InputText @bind-Value="UserAccount.Phone" class="form-control" aria-placeholder="Phonenumber" />
+                <ValidationMessage For="() => UserAccount.Phone" />
+            </div>
+            <div class="mb-3 text-center">
+                <span class="text-danger">@errorMessage</span>
+            </div>
+            <div class="mb-3 d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Register</button>
+                <NavLink href="/login" class="btn btn-outline-secondary">
+                    Back to Login Page
+                </NavLink>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<UserAccount> OnValidCustomerSubmit { get; set; }
+    [SupplyParameterFromForm]
+    public UserAccount UserAccount { get; set; } = new UserAccount();
+    private string? errorMessage;
+    private void RegisterUser()
+    {
+        var isDuplicate = appDbContext.UserAccounts
+        .Any(u => u.UserName == UserAccount.UserName || u.Email == UserAccount.Email);
+        if (isDuplicate)
+        {
+            errorMessage = "Username or Email existed!";
+            return;
+        }
+        var registerUser = new UserAccount
+        {
+            Name = UserAccount.Name,
+            UserName = UserAccount.UserName,
+            Password = UserAccount.Password,
+            Phone = UserAccount.Phone,
+            Email = UserAccount.Email,
+            RoleId = 2
+
+        };
+
+        genericRepository.Add(registerUser);
+        navigationManager.NavigateTo("/login");
+    }
+}
+@using AuthenLearn.Data;
+@using AuthenLearn.Applications.Interfaces;
+@using AuthenLearn.Model;
+@using Microsoft.EntityFrameworkCore
