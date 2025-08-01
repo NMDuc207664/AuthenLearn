@@ -11,5 +11,6 @@ namespace AuthenLearn.Applications.Interfaces
         Task<List<Expense>> GetExpensesByDebtIdAsync(Guid debtId, ExpenseType expenseType, Guid? excludeExpenseId = null);
         Task<List<Expense>> GetAllExpensesByYearAsync(Guid userId, int year);
         Task<List<Expense>> GetAllExpensesByMonthAsync(Guid userId, int year, int month);
+        Task<List<Expense>> GetExpensesByDebtIdAndTypeAsync(Guid debtId, ExpenseType type);
     }
 }

@@ -13,9 +13,13 @@
         <div class="card" style="width: 24rem; max-width: 90%; margin: auto;">
             <div class="card-body">
                 <h5 class="card-title">Are your sure your want to Delete this?</h5>
-                @if (FormBody != null)
+                @if (FormBody != null && Entity != null)
                 {
                     @FormBody(Entity)
+                }
+                else if (Entity == null)
+                {
+                    @FormBody_2
                 }
                 <br>
                 <div class="d-flex justify-content-end gap-2">
@@ -34,9 +38,11 @@
     [Parameter]
     public bool Show { get; set; }
     [Parameter]
-    public TEntity Entity { get; set; } = default;
+    public TEntity? Entity { get; set; }
     [Parameter]
     public RenderFragment<TEntity>? FormBody { get; set; }
+    [Parameter]
+    public RenderFragment? FormBody_2 { get; set; }
 
     [Parameter]
     public EventCallback OnCancel { get; set; }

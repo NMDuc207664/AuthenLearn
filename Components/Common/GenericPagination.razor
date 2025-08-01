@@ -32,7 +32,7 @@
                 <option value="">-- Tình trạng --</option>
                 @foreach (var option in PaidOptions)
                 {
-                    <option value="@option.IsTrue.ToString().ToLower()">@option.Text</option>
+                    <option value="@option.IsTrue?.ToString().ToLower()">@option.Text</option>
                 }
 
             </select>

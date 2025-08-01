@@ -95,19 +95,19 @@
 "remaining_debt_by_month_year"
 };
 
-    public string totalPayThisYear { get; set; }
-    public string totalDebtThisYear { get; set; }
+    public string totalPayThisYear { get; set; } = "";
+    public string totalDebtThisYear { get; set; } = "";
     public string SelectedKey { get; set; } = "spent_month_year";
     public DateTime SelectedDate { get; set; } = DateTime.Now;
-    public string resultMessage { get; set; }
-    public string errorMessage { get; set; }
+    public string resultMessage { get; set; } = "";
+    public string errorMessage { get; set; } = "";
     public bool isLoading { get; set; } = false;
 
-    @* protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         // Load summary khi component được khởi tạo
         await LoadSummary();
-    } *@
+    }
 
     public async Task GetExpenseData()
     {

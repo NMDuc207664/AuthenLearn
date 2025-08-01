@@ -43,6 +43,16 @@ namespace AuthenLearn.Applications.Services
         {
             var expense = await _iExpenseRepository.GetByIdAsync(expenseId);
             if (expense == null) return;
+            if (expense.Type == ExpenseType.Debt)
+            {
+                var debt = await _iExpenseRepository.GetExpensesByDebtIdAndTypeAsync(expense.DebtId!.Value, ExpenseType.PayOffDebt);
+                if (debt.Any())
+                {
+                    throw new InvalidOperationException("Không thế xóa khoản nợ vì đã có chi tiêu trả nợ.");
+                }
+                _iExpenseRepository.Delete(expense);
+                return;
+            }
             // if (expense.Type == ExpenseType.Debt)
             // {
             //     var debt = await _iDebtRepository.GetByIdAsync(expense.DebtId.Value);

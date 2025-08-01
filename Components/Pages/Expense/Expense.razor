@@ -106,19 +106,21 @@
         </div>
     </FormBody>
 </GenericDeleteCardForm>
-<ExpenseStatistical></ExpenseStatistical>
-@* <div>
+@if (showStatistical)//gọi như này vì cả 2 thg này đều gọi tới chung 1 service và có ONInitialize nhưng không rõ thằng
+//nào gọi trước thằng nào gọi sau
+{
     <ExpenseStatistical userId="@UserId"></ExpenseStatistical>
-</div> *@
+}
 
 @code
 {
+    private bool showStatistical = false;
     private List<CustomDropdownOption> PaidOptions = new()
 {
 new CustomDropdownOption { IsTrue = true, Text = "Đã trả" },
 new CustomDropdownOption { IsTrue = false, Text = "Chưa trả" }
 };
-    private string Title { get; set; }
+    private string Title { get; set; } = "Default";
     private List<string> headers = new() { "Mô tả", "Số tiền", "Ngày", "Type", "Hành động" };
     private List<CustomDropdownOption> MyOptions = new()
 {
@@ -142,10 +144,10 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     private bool? IsPaid { get; set; }
     private int TotalItems { get; set; }
     private int TotalPages { get; set; }
-    private PagedResult<Model.Expense> pagedResult1;
-    private List<Model.Debt> listDebt;
-    private Debt debtComponent;
-    private ExpenseStatistical expenseStatistical;
+    private PagedResult<Model.Expense>? pagedResult1;
+    private List<Model.Debt> listDebt = new();
+    private Debt? debtComponent;
+    private ExpenseStatistical? expenseStatistical;
     private async void OpenAddDialog()
     {
         isEditMode = false;
@@ -178,7 +180,7 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     {
         if (Exp.Type == ExpenseType.Debt)
         {
-            var debtId = debtComponent.AddDebtFE();
+            var debtId = debtComponent!.AddDebtFE();
 
             // Gán DebtId vào Expense
             Exp.DebtId = debtId;
@@ -197,11 +199,15 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
         if (Exp.Type == ExpenseType.PayOffDebt)
         {
             await ListOfAllUnpaidDebt();
-            var selectedDebtId = debtComponent.GetSelectedDebtId();
+            var selectedDebtId = debtComponent!.GetSelectedDebtId();
             Exp.DebtId = selectedDebtId;
             Exp.Debt = listDebt.FirstOrDefault(d => d.Id == selectedDebtId);
             iExpenseService.AddExpense(Exp, UserId);
-            await debtComponent.UpdateDebtPaidFE(Exp.DebtId.Value);
+            await debtComponent.UpdateDebtPaidFE(Exp.DebtId!.Value);
+        }
+        else if (Exp.Type == ExpenseType.Pay || Exp.Type == ExpenseType.Plus)
+        {
+            iExpenseService.AddExpense(Exp, UserId);
         }
         await LoadExpensesAsync();
         showDialog = false;
@@ -242,8 +248,20 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     }
     public async Task DeleteExpense(Guid expenseId)
     {
+        var Exp = Expenses.FirstOrDefault(e => e.Id == expenseId);
+        Console.WriteLine($"Exp: {Exp}");
+        var debtId = Exp?.DebtId ?? Guid.Empty;
+        var ExpenseTypes = Exp?.Type.ToString();
+        Console.WriteLine($"debtId: {debtId}");
+        Console.WriteLine($"ExpenseTypes: {ExpenseTypes}");
+        await iExpenseService.DeleteExpense(expenseId);
+        if (debtId != Guid.Empty && ExpenseTypes == "PayOffDebt")
+        {
+            Console.WriteLine($"debtId____: {debtId}");
+            Console.WriteLine($"ExpenseTypes_______: {ExpenseTypes}");
+            await debtComponent!.DeleteDebtFE(debtId);
+        }
 
-        await iExpenseService.DeleteExpense(Exp.Id);
         Expenses.RemoveAll(e => e.Id == expenseId);
         await LoadExpensesAsync();
         showDeleteDialog = false;
@@ -267,11 +285,9 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
             Amount = r.Amount,
             Date = r.Date
         }).ToList();
-        Title = pagedResult1.Title;
+        Title = pagedResult1.Title!;
         TotalItems = pagedResult1.TotalItems;
         TotalPages = (int)Math.Ceiling((double)TotalItems / PageSize);
-        Console.WriteLine("Totalpage: " + TotalPages);
-        Console.WriteLine("Totalitems: " + TotalItems);
     }
     private async Task HandleConfirm()
     {
@@ -350,25 +366,19 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
             {
                 UserId = userId;
                 await LoadExpensesAsync();
+                showStatistical = true;
                 StateHasChanged();
             }
         }
-        await expenseStatistical.LoadSummary();
     }
 
     private async Task ListOfAllUnpaidDebt()
     {
         var list = await iDebtService.GetAllUserDebt(UserId, false);
-        Console.WriteLine($"Service returned {list.Count} unpaid debts");
-        foreach (var debt in list)
-        {
-            Console.WriteLine($"Debt: {debt.Id} - {debt.Owner} - {debt.TotalAmountOfDebt}");
-        }
-
         listDebt = list;
         if (debtComponent != null)
         {
-            await debtComponent.UpdateListDebts(listDebt);
+            debtComponent.UpdateListDebts(listDebt);
         }
         StateHasChanged();
     }

@@ -58,6 +58,14 @@ namespace AuthenLearn.Data.Repositories
                 TotalItems = totalItems
             };
         }
+
+        public async Task<List<Expense>> GetExpensesByDebtIdAndTypeAsync(Guid debtId, ExpenseType type)
+        {
+            return await _context.Expenses
+                .Where(e => e.DebtId == debtId && e.Type == type)
+                .ToListAsync();
+        }
+
         public async Task<List<Expense>> GetExpensesByDebtIdAsync(Guid debtId, ExpenseType expenseType, Guid? excludeExpenseId = null)
         {
             return await _context.Expenses

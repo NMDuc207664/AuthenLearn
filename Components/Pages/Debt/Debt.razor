@@ -59,7 +59,7 @@ else if (Type == ExpenseType.PayOffDebt)
         await iDebtService.UpdateDebt(Debt_1);
     }
 
-    public async Task UpdateListDebts(List<Model.Debt> debts)
+    public void UpdateListDebts(List<Model.Debt> debts)
     {
         ListDebts = debts;
         Console.WriteLine($"UpdateListDebts called with {debts?.Count ?? 0} debts");
@@ -75,5 +75,9 @@ else if (Type == ExpenseType.PayOffDebt)
     {
         Console.WriteLine($"GetSelectedDebtId returning: {SelectedDebtId}");
         return SelectedDebtId;
+    }
+    public async Task DeleteDebtFE(Guid debtId)
+    {
+        await iDebtService.DeleteDebt(debtId);
     }
 }

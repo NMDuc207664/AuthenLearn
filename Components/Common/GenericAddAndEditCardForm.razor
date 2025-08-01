@@ -11,7 +11,7 @@
                 <EditForm Model="@Entity" OnValidSubmit="OnConfirm">
                     <DataAnnotationsValidator />
 
-                    @if (FormBody != null)
+                    @if (FormBody != null && Entity != null)
                     {
                         @FormBody(Entity)
                     }
@@ -37,7 +37,7 @@
     private string Title => IsEditMode ? "Edit Customer" : "Add New Customer";
     private string SubmitButton => IsEditMode ? "Update" : "Create";
     [Parameter]
-    public TEntity Entity { get; set; } = default;
+    public TEntity? Entity { get; set; }
     [Parameter] public RenderFragment<TEntity>? FormBody { get; set; }
 
     [Parameter]
