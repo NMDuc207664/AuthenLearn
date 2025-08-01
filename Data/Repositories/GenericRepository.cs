@@ -30,7 +30,12 @@ namespace AuthenLearn.Data.Repositories
 
         public virtual async Task<TEntity> GetByIdAsync(Guid id)
         {
-            return await _context.Set<TEntity>().FindAsync(id);
+            var entity = await _context.Set<TEntity>().FindAsync(id);
+            if (entity == null)
+            {
+                throw new KeyNotFoundException($"Entity of type {typeof(TEntity).Name} with ID '{id}' was not found.");
+            }
+            return entity;
         }
 
         public virtual void Update(TEntity entity)
@@ -38,10 +43,20 @@ namespace AuthenLearn.Data.Repositories
             _context.Set<TEntity>().Update(entity);
             _context.SaveChanges();
         }
-        public async Task<List<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, int skip, int take)
+        public async Task<List<TEntity>> FindAsync(
+     Expression<Func<TEntity, bool>> predicate,
+     int skip,
+     int take,
+     Func<IQueryable<TEntity>, IQueryable<TEntity>>? include = null)
         {
-            return await _context.Set<TEntity>()
-                .Where(predicate)
+            IQueryable<TEntity> query = _context.Set<TEntity>().Where(predicate);
+
+            if (include != null)
+            {
+                query = include(query);
+            }
+
+            return await query
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();

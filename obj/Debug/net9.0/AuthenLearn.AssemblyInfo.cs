@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AuthenLearn")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5dd2f8a56fd816f44c0c7311062a379c6a13d4d2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a80d7a61ef1bb0b244c2cb3b8f19dd0cb4bca210")]
 [assembly: System.Reflection.AssemblyProductAttribute("AuthenLearn")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AuthenLearn")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

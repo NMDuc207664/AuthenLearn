@@ -1,4 +1,4 @@
-@page "/total"
+@* @page "/total" *@
 @using AuthenLearn.Applications.DTOs.Response
 @using AuthenLearn.Applications.Interfaces
 @using AuthenLearn.Data.Common
@@ -103,11 +103,11 @@
     public string errorMessage { get; set; }
     public bool isLoading { get; set; } = false;
 
-    protected override async Task OnInitializedAsync()
+    @* protected override async Task OnInitializedAsync()
     {
         // Load summary khi component được khởi tạo
         await LoadSummary();
-    }
+    } *@
 
     public async Task GetExpenseData()
     {

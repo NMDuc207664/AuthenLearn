@@ -35,7 +35,7 @@ namespace AuthenLearn.Applications.Services
             }
         }
 
-        public async Task<List<Debt>> GetAllUserDebt(Guid userId, bool isPaid)
+        public async Task<List<Debt>> GetAllUserDebt(Guid userId, bool isPaid = false)
         {
             var allDebt = await _iDebtRepository.GetAllUserDebt(userId);
             if (isPaid)
@@ -73,6 +73,10 @@ namespace AuthenLearn.Applications.Services
                 debt.Description = request.Description;
                 debt.Owner = request.Owner;
                 debt.TotalAmountOfDebt = request.TotalAmountOfDebt;
+            }
+            else
+            {
+                return;
             }
             _iDebtRepository.Update(debt);
         }

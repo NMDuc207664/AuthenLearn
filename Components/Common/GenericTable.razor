@@ -1,36 +1,69 @@
 @using AuthenLearn.Data.Common
 @typeparam TEntity
 
-<div class="w-full">
-    <h3 class="text-xl font-bold mb-4">@Title</h3>
-    @if (PagedResult is null || PagedResult.Items is null)
-    {
-        <p class="text-gray-500">Đang tải dữ liệu...</p>
+<div class="w-100">
+    <!-- Title Section with Bootstrap Styling -->
+    <div class="mb-4 d-flex justify-content-center">
+        <div class="bg-light p-3 bg-gradient rounded-4 shadow-lg px-4 py-3 text-center position-relative thick-border">
+
+            <!-- Title Text -->
+            <h3 class="mb-0 fw-bold text-danger">
+                @Title
+            </h3>
+
+            <!-- Simulated shimmer (optional, basic version) -->
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="
+                background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+                animation: shimmer 2s infinite;
+                z-index: 1;
+                pointer-events: none;
+            "></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .shimmer-overlay {
+        background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+        animation: shimmer 2s infinite linear;
+        z-index: 1;
+        pointer-events: none;
     }
-    else if (!PagedResult.Items.Any())
-    {
-        <p class="text-gray-500">Không có dữ liệu để hiển thị.</p>
+</style>
+<style>
+    .thick-border {
+        border: 4px solid #29198776 !important;
+        /* #198754 là màu success của Bootstrap */
     }
-    else
-    {
-        <div class="" style="height: 500px; overflow-y: auto;">
-            <table class="min-w-full table-fixed border-collapse border border-gray-300 table table-hover">
-                <thead class="bg-gray-100 sticky top-0">
-                    <tr>
-                        @foreach (var header in RowHeaders)
-                        {
-                            <th class="border px-4 py-2 bg-gray-100">@header</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in PagedResult.Items)
+</style>
+@if (PagedResult is null || PagedResult.Items is null)
+{
+    <p class="text-gray-500">Đang tải dữ liệu...</p>
+}
+else if (!PagedResult.Items.Any())
+{
+    <p class="text-gray-500">Không có dữ liệu để hiển thị.</p>
+}
+else
+{
+    <div class="" style="height: 500px; overflow-y: auto;">
+        <table class="min-w-full table-fixed border-collapse border border-gray-300 table table-hover">
+            <thead class="bg-gray-100 sticky top-0">
+                <tr>
+                    @foreach (var header in RowHeaders)
                     {
-                        <tr class="hover:bg-gray-50">
-                            @RowTemplate(item)
-                        </tr>
+                        <th class="border px-4 py-2 bg-gray-100">@header</th>
                     }
-                    @* @if (PagedResult.Items.Count() < PageSize)
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in PagedResult.Items)
+                {
+                    <tr class="hover:bg-gray-50">
+                        @RowTemplate(item)
+                    </tr>
+                }
+                @* @if (PagedResult.Items.Count() < PageSize)
                     {
                         @for (int i = PagedResult.Items.Count(); i < PageSize; i++)
                         {
@@ -42,11 +75,99 @@
                             </tr>
                         }
                     } *@
-                </tbody>
-            </table>
+            </tbody>
+        </table>
+    </div>
+}
+
+
+@* <div class="w-100">
+    <!-- Title Section with Bootstrap Styling -->
+    <div class="mb-4 d-flex justify-content-center">
+           <div class="bg-light p-3 bg-gradient rounded-4 shadow-lg px-4 py-3 text-center position-relative thick-border">
+            
+            <!-- Title Text -->
+            <h3 class="mb-0 fw-bold text-danger">
+                @Title
+            </h3>
+
+            <!-- Simulated shimmer (optional, basic version) -->
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="
+                background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+                animation: shimmer 2s infinite;
+                z-index: 1;
+                pointer-events: none;
+            "></div>
+        </div>
+    </div>
+</div>
+
+<style>
+
+.shimmer-overlay {
+    background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    animation: shimmer 2s infinite linear;
+    z-index: 1;
+    pointer-events: none;
+}
+</style>
+<style>
+    .thick-border {
+        border: 4px solid #29198776 !important; /* #198754 là màu success của Bootstrap */
+    }
+</style>
+
+
+
+    @if (PagedResult is null || PagedResult.Items is null)
+    {
+        <div class="flex items-center justify-center py-12">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-gray-500">Đang tải dữ liệu...</p>
+            </div>
         </div>
     }
-</div>
+    else if (!PagedResult.Items.Any())
+    {
+        <div class="flex items-center justify-center py-12">
+            <div class="text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-gray-500 text-lg font-medium">@EmptyMessage</p>
+                <p class="text-gray-400 text-sm mt-1">Hiện tại chưa có dữ liệu nào để hiển thị</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto" style="height: 500px; overflow-y: auto;">
+                <table class="min-w-full table-fixed border-collapse">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+                        <tr>
+                            @foreach (var header in RowHeaders)
+                            {
+                                <th class="border-b border-gray-200 px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    @header
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var item in PagedResult.Items)
+                        {
+                            <tr class="hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+                                @RowTemplate(item)
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    } *@
+
 
 @code {
     [Parameter] public string Title { get; set; } = "";

@@ -5,5 +5,6 @@ namespace AuthenLearn.Data.Common.QueryParameters
         public int? Year { get; set; }
         public int? Month { get; set; }
         public int? Day { get; set; }
+        public bool? Paid { get; set; }
     }
 }

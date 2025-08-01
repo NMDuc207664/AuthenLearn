@@ -25,51 +25,20 @@
             }
         </select>
     </div>
-    @* @if (Filter == true)
+    @if (FilterbyType == true)
     {
         <div class="col">
-            <button class="btn btn-primary w-100" @onclick="ApplyDateFilter">Lọc</button>
-        </div>
-        <div class="col">
-            <select class="form-control" @onchange="HandleCustomDropdownChange">
-                <option value="">-- Tuỳ chọn nâng cao --</option>
-                @foreach (var option in CustomOptions)
+            <select class="form-control" value="@query.Paid?.ToString().ToLower()" @onchange="HandlePaidChange">
+                <option value="">-- Tình trạng --</option>
+                @foreach (var option in PaidOptions)
                 {
-                    <option value="@option.Value">@option.Text</option>
+                    <option value="@option.IsTrue.ToString().ToLower()">@option.Text</option>
                 }
+
             </select>
         </div>
-    } *@
+    }
 
-    @* @if (Filter == true)
-    {
-        <!-- Filter controls with pagination-style design -->
-        <div class="col-12 mt-3">
-            <div class="d-flex justify-content-center">
-                <nav aria-label="Filter controls">
-                    <ul class="pagination mb-0">
-                        <li class="page-item">
-                            <button class="page-link px-3" @onclick="ApplyDateFilter" title="Áp dụng bộ lọc">
-                                <i class="fas fa-filter me-1"></i>Lọc
-                            </button>
-                        </li>
-                        <li class="page-item">
-                            <div class="page-link p-0" style="background: transparent; border: none;">
-                                <select class="form-select border-0" style="min-width: 200px; background: transparent;"
-                                    @onchange="HandleCustomDropdownChange">
-                                    <option value="">-- Tuỳ chọn nâng cao --</option>
-                                    @foreach (var option in CustomOptions)
-                                    {
-                                        <option value="@option.Value">@option.Text</option>
-                                    }
-                                </select>
-                            </div>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-    } *@
     @if (Filter == true)
     {
         <!-- Filter controls with pagination-style design -->
@@ -137,6 +106,10 @@
 </div>
 @code {
     [Parameter]
+    public List<CustomDropdownOption> PaidOptions { get; set; } = new();
+    [Parameter]
+    public bool FilterbyType { get; set; }
+    [Parameter]
     public bool Filter { get; set; }
     private ExpenseQueryParameter query = new()
     {
@@ -176,5 +149,17 @@
         {
             await ParentHandleCustomOption.InvokeAsync(SelectedCustomOption);
         }
+    }
+    private void HandlePaidChange(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        if (value == "true")
+            query.Paid = true;
+        else if (value == "false")
+            query.Paid = false;
+        else
+            query.Paid = null;
+
+        Console.WriteLine($"Paid filter changed to: {query.Paid}");
     }
 }

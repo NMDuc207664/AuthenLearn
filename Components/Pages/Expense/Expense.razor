@@ -17,7 +17,7 @@
 
 <div>
     <GenericPagination OnFilterChanged="OnFilterChanged" TotalPages="TotalPages" Filter=true CustomOptions="MyOptions"
-        ParentHandleCustomOption="HandleCustomOption">
+        ParentHandleCustomOption="HandleCustomOption" FilterbyType=true PaidOptions="PaidOptions">
         <FormBody>
             <div class="d-flex flex-row-reverse bd-highlight px-2">
                 <button @onclick="OpenAddDialog" class="border-0 bg-transparent p-0 shadow-none focus:outline-none ">
@@ -106,14 +106,20 @@
         </div>
     </FormBody>
 </GenericDeleteCardForm>
+<ExpenseStatistical></ExpenseStatistical>
 @* <div>
     <ExpenseStatistical userId="@UserId"></ExpenseStatistical>
 </div> *@
 
 @code
 {
+    private List<CustomDropdownOption> PaidOptions = new()
+{
+new CustomDropdownOption { IsTrue = true, Text = "Đã trả" },
+new CustomDropdownOption { IsTrue = false, Text = "Chưa trả" }
+};
     private string Title { get; set; }
-    private List<string> headers = new() { "Mô tả", "Số tiền", "Ngày", "Hành động", "Hành động", "Hành động", "Hành động" };
+    private List<string> headers = new() { "Mô tả", "Số tiền", "Ngày", "Type", "Hành động" };
     private List<CustomDropdownOption> MyOptions = new()
 {
 new() { Value = "this_month", Text = "Tháng này" },
@@ -130,21 +136,24 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     private List<AuthenLearn.Model.Expense> Expenses = new();
     public int PageIndex { get; set; } = 1;
     public int PageSize { get; set; } = 15;
-    public int? Year { get; set; }
+    public int? Year { get; set; } = DateTime.Now.Year;
     public int? Month { get; set; }
     public int? Day { get; set; }
+    private bool? IsPaid { get; set; }
     private int TotalItems { get; set; }
     private int TotalPages { get; set; }
     private PagedResult<Model.Expense> pagedResult1;
     private List<Model.Debt> listDebt;
     private Debt debtComponent;
+    private ExpenseStatistical expenseStatistical;
     private async void OpenAddDialog()
     {
         isEditMode = false;
         Exp = new Model.Expense()
         {
             Date = DateTime.Today,
-            Debt = new Model.Debt()
+            Debt = new Model.Debt(),
+            Type = ExpenseType.Pay,
         };
         showDialog = true;
         await ListOfAllUnpaidDebt();
@@ -183,13 +192,18 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
                 TotalAmountOfDebt = debtComponent.Debt_1.TotalAmountOfDebt,
                 IsPaid = false
             };
+            iExpenseService.AddExpense(Exp, UserId);
         }
-        iExpenseService.AddExpense(Exp, UserId);
-        await LoadExpensesAsync();
         if (Exp.Type == ExpenseType.PayOffDebt)
         {
             await ListOfAllUnpaidDebt();
+            var selectedDebtId = debtComponent.GetSelectedDebtId();
+            Exp.DebtId = selectedDebtId;
+            Exp.Debt = listDebt.FirstOrDefault(d => d.Id == selectedDebtId);
+            iExpenseService.AddExpense(Exp, UserId);
+            await debtComponent.UpdateDebtPaidFE(Exp.DebtId.Value);
         }
+        await LoadExpensesAsync();
         showDialog = false;
         StateHasChanged();
     }
@@ -243,7 +257,8 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
             PageSize = this.PageSize,
             Year = this.Year,
             Month = this.Month,
-            Day = this.Day
+            Day = this.Day,
+            Paid = this.IsPaid
         };
         pagedResult1 = await iExpenseService.GetBookByPagination(UserId, query);
         Expenses = pagedResult1.Items.Select(r => new Model.Expense
@@ -272,6 +287,7 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
         Year = filter.Year;
         Month = filter.Month;
         Day = filter.Day;
+        IsPaid = filter.Paid;
 
         await LoadExpensesAsync();
         StateHasChanged();
@@ -337,6 +353,7 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
                 StateHasChanged();
             }
         }
+        await expenseStatistical.LoadSummary();
     }
 
     private async Task ListOfAllUnpaidDebt()

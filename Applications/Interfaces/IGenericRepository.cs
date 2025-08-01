@@ -9,6 +9,9 @@ namespace AuthenLearn.Applications.Interfaces
         void Delete(TEntity entity);
         Task<TEntity> GetByIdAsync(Guid id);
         Task<List<TEntity>> GetAllAsync();
-        Task<List<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate, int skip, int take);
+        Task<List<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate,
+    int skip,
+    int take,
+    Func<IQueryable<TEntity>, IQueryable<TEntity>>? include = null);
     }
 }

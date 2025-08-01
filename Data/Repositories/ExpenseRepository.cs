@@ -36,11 +36,19 @@ namespace AuthenLearn.Data.Repositories
         e.UserId == userId &&
         (!query.Year.HasValue || e.Date.Year == query.Year.Value) &&
         (!query.Month.HasValue || e.Date.Month == query.Month.Value) &&
-        (!query.Day.HasValue || e.Date.Day == query.Day.Value);
+        (!query.Day.HasValue || e.Date.Day == query.Day.Value) &&
+         (!query.Paid.HasValue ||
+         (query.Paid.Value ? (e.Debt != null && e.Debt.IsPaid) : (e.Debt != null && !e.Debt.IsPaid)));
 
             int skip = (query.PageIndex - 1) * query.PageSize;
             var totalItems = await _context.Set<Expense>().Where(filter).CountAsync();
-            var items = await FindAsync(filter, skip, query.PageSize);
+            var items = await FindAsync(
+    filter,
+    skip,
+    query.PageSize,
+    include: q => q.Include(e => e.Debt)
+);
+
 
             return new PagedResult<Expense>
             {
@@ -50,10 +58,10 @@ namespace AuthenLearn.Data.Repositories
                 TotalItems = totalItems
             };
         }
-        public async Task<List<Expense>> GetExpensesByDebtIdAsync(Guid debtId, ExpenseType type, Guid? excludeExpenseId = null)
+        public async Task<List<Expense>> GetExpensesByDebtIdAsync(Guid debtId, ExpenseType expenseType, Guid? excludeExpenseId = null)
         {
             return await _context.Expenses
-       .Where(e => e.DebtId == debtId && e.Type == type && (!excludeExpenseId.HasValue || e.Id != excludeExpenseId.Value))
+       .Where(e => e.DebtId == debtId && e.Type == expenseType && (!excludeExpenseId.HasValue || e.Id != excludeExpenseId.Value))
        .ToListAsync();
         }
     }

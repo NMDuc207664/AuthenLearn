@@ -1,9 +1,10 @@
+@using AuthenLearn.Applications.Interfaces.ServicesInterfaces
 @using AuthenLearn.Model
 @using AuthenLearn.Model.Enum
 @using Microsoft.AspNetCore.Components.Forms
 @inject IDebtService iDebtService
 @rendermode InteractiveServer
-@* <div style="background: red; height: 200px;">XYZ TEST</div> *@
+
 @if (Type == ExpenseType.Debt)
 {
     <div class="mb-3">
@@ -18,35 +19,26 @@
         <label class="form-label">Mô tả</label>
         <InputText class="form-control" @bind-Value="Debt_1.Description" />
     </div>
-    @* <div class="px-3 mb-3">
-        Testing 123123213
-    </div> *@
 }
 else if (Type == ExpenseType.PayOffDebt)
 {
-    @* <div class="mb-3">
+    <div class="mb-3">
         <label class="form-label">Chọn khoản nợ để trả</label>
-        <InputSelect class="form-control" @bind-Value="SelectedDebtId">
+        <select class="form-select" @bind="SelectedDebtId">
             <option value="">-- Chọn khoản nợ --</option>
-            @foreach (var item in ListDebts)
+            @if (ListDebts != null && ListDebts.Any())
             {
-                <option value="@item.Id">@item.Owner - @item.TotalAmountOfDebt đ</option>
+                @foreach (var debt in ListDebts)
+                {
+                    <option value="@debt.Id">@debt.Owner - @debt.Description - @debt.TotalAmountOfDebt.ToString("N0") đ</option>
+                }
             }
-        </InputSelect>
-    </div> *@
-    <select class="form-select" @bind="SelectedDebtId">
-        @if (ListDebts == null || !ListDebts.Any())
-        {
-            <option disabled>Không có khoản nợ nào để trả</option>
-        }
-        else
-        {
-            @foreach (var debt in ListDebts)
+            else
             {
-                <option value="@debt.Id">@debt.Owner - @debt.TotalAmountOfDebt đ</option>
+                <option disabled>Không có khoản nợ nào để trả</option>
             }
-        }
-    </select>
+        </select>
+    </div>
 }
 
 @code {
@@ -61,15 +53,27 @@ else if (Type == ExpenseType.PayOffDebt)
     {
         return iDebtService.AddDebt(Debt_1, UserId);
     }
+
     public async Task UpdateDebtFE()
     {
         await iDebtService.UpdateDebt(Debt_1);
     }
+
     public async Task UpdateListDebts(List<Model.Debt> debts)
     {
         ListDebts = debts;
         Console.WriteLine($"UpdateListDebts called with {debts?.Count ?? 0} debts");
         StateHasChanged();
     }
+
+    public async Task UpdateDebtPaidFE(Guid debtId)
+    {
+        await iDebtService.UpdateDebtPaid(debtId);
+    }
+
+    public Guid? GetSelectedDebtId()
+    {
+        Console.WriteLine($"GetSelectedDebtId returning: {SelectedDebtId}");
+        return SelectedDebtId;
+    }
 }
-@using AuthenLearn.Applications.Interfaces.ServicesInterfaces;

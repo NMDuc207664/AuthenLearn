@@ -1,5 +1,6 @@
 using AuthenLearn.Applications.DTOs.Response;
 using AuthenLearn.Applications.Extensions;
+using AuthenLearn.Applications.Helpers;
 using AuthenLearn.Applications.Interfaces;
 using AuthenLearn.Applications.Interfaces.ServicesInterfaces;
 using AuthenLearn.Data.Common;
@@ -12,11 +13,9 @@ namespace AuthenLearn.Applications.Services
     public class ExpenseService : IExpenseService
     {
         private readonly IExpenseRepository _iExpenseRepository;
-        private readonly IDebtRepository _iDebtRepository;
-        public ExpenseService(IExpenseRepository iExpenseRepository, IDebtRepository iDebtRepository)
+        public ExpenseService(IExpenseRepository iExpenseRepository)
         {
             _iExpenseRepository = iExpenseRepository;
-            _iDebtRepository = iDebtRepository;
         }
 
         public void AddExpense(Expense request, Guid userId)
@@ -29,42 +28,14 @@ namespace AuthenLearn.Applications.Services
                 UserId = userId,
                 Type = request.Type
             };
-            if (request.Type == ExpenseType.Debt)
+            if (request.Type == ExpenseType.Debt || request.Type == ExpenseType.PayOffDebt)
             {
                 // Gán DebtId từ request
-                expense.DebtId = request.DebtId;
-            }
-            else if (request.Type == ExpenseType.PayOffDebt)
-            {
-                // Đối với PayOffDebt cũng cần DebtId
                 expense.DebtId = request.DebtId;
             }
 
             _iExpenseRepository.Add(expense);
 
-
-            // if (request.Type == ExpenseType.Pay || request.Type == ExpenseType.Plus)
-            // {
-            //     _iExpenseRepository.Add(expense);
-            // }
-            // else if (request.Type == ExpenseType.Debt)
-            // {
-            //     var debt = new Debt
-            //     {
-            //         Owner = request.Debt.Owner,
-            //         Description = request.Debt.Description,
-            //         TotalAmountOfDebt = request.Amount,
-            //         UserId = userId,
-            //     };
-            //     expense.DebtId = debt.Id;
-            //     _iDebtRepository.Add(debt);
-            //     _iExpenseRepository.Add(expense);
-            // }
-            // else if (request.Type == ExpenseType.PayOffDebt)
-            // {
-            //     expense.DebtId = request.DebtId;
-            //     _iExpenseRepository.Add(expense);
-            // }
         }
 
 
@@ -95,12 +66,16 @@ namespace AuthenLearn.Applications.Services
             switch (key)
             {
                 case "spent_year":
+                    if (time == null) return Task.FromResult(new MoneyResponse());
                     return GetAllExpensesPayByYear(userId, time.Value.Year);
                 case "spent_month_year":
+                    if (time == null) return Task.FromResult(new MoneyResponse());
                     return GetAllExpensesPayByMonth(userId, time.Value.Year, time.Value.Month);
                 case "remaining_debt_by_year":
+                    if (time == null) return Task.FromResult(new MoneyResponse());
                     return GetAllRemainingDebtByYear(userId, time.Value.Year);
                 case "remaining_debt_by_month_year":
+                    if (time == null) return Task.FromResult(new MoneyResponse());
                     return GetAllRemainingDebtByMonth(userId, time.Value.Year, time.Value.Month);
                 // case "remaining_debt":
                 //     return GetAllExpensesByMonth(userId, time.Value.Year, time.Value.Month);
@@ -146,20 +121,22 @@ namespace AuthenLearn.Applications.Services
                 Month = month
             };
             var result = await _iExpenseRepository.GetByUserIdAsync(userId, query);
-            var unpaidDebtIds = result.Items
-            .Where(e => e.Type == ExpenseType.Debt && !e.Debt.IsPaid)
+            var unpaidDebtItems = result.Items
+            .Where(e => e.Type == ExpenseType.Debt && e.Debt != null && !e.Debt.IsPaid)
+            .ToList();
+
+            var unpaidDebtIds = unpaidDebtItems
             .Select(e => e.DebtId)
             .Distinct()
             .ToList();
-            var totalUnpaidDebt = result.Items
-           .Where(e => e.Type == ExpenseType.Debt && !e.Debt.IsPaid)
-           .Select(e => e.Debt.TotalAmountOfDebt)
-           .Distinct()
-           .Sum();
+            var totalUnpaidDebt = unpaidDebtItems
+            .Select(e => e.Debt!.TotalAmountOfDebt) // safe because filtered by e.Debt != null
+            .Distinct()
+            .Sum();
             var totalPaid = result.Items
             .Where(e =>
                 e.Type == ExpenseType.Pay ||
-                (e.Type == ExpenseType.PayOffDebt && unpaidDebtIds.Contains(e.DebtId))
+                (e.Type == ExpenseType.PayOffDebt && e.DebtId != null && unpaidDebtIds.Contains(e.DebtId.Value))
             )
             .Sum(e => e.Amount);
             var remaining = totalPaid - totalUnpaidDebt;
@@ -173,14 +150,15 @@ namespace AuthenLearn.Applications.Services
                 Year = year
             };
             var result = await _iExpenseRepository.GetByUserIdAsync(userId, query);
-            var unpaidDebtIds = result.Items
-           .Where(e => e.Type == ExpenseType.Debt && !e.Debt.IsPaid)
+            var unpaidDebtItems = result.Items
+            .Where(e => e.Type == ExpenseType.Debt && e.Debt != null && !e.Debt.IsPaid)
+            .ToList();
+            var unpaidDebtIds = unpaidDebtItems
            .Select(e => e.DebtId)
            .Distinct()
            .ToList();
-            var totalUnpaidDebt = result.Items
-           .Where(e => e.Type == ExpenseType.Debt && !e.Debt.IsPaid)
-           .Select(e => e.Debt.TotalAmountOfDebt)
+            var totalUnpaidDebt = unpaidDebtItems
+           .Select(e => e.Debt!.TotalAmountOfDebt)
            .Distinct()
            .Sum();
             var totalPaid = result.Items
@@ -191,63 +169,35 @@ namespace AuthenLearn.Applications.Services
             .Sum(e => e.Amount);
             var remaining = totalPaid - totalUnpaidDebt;
             return remaining.ToMoneyResponse();
-            throw new NotImplementedException();
         }
 
         public async Task<PagedResult<Expense>> GetBookByPagination(Guid userId, ExpenseQueryParameter query)
         {
             var result = await _iExpenseRepository.GetByUserIdAsync(userId, query);
-            var title = GetTitleFromQuery(query);
-            return new PagedResult<Expense>
-            {
-                Items = result.Items,
-                Title = title,
-                PageIndex = query.PageIndex,
-                PageSize = query.PageSize,
-                TotalItems = result.TotalItems
-            };
+            result.Title = TitleUpdateHelper.GetTitleFromQuery(query);
+            return result;
         }
 
         public async Task UpdateExpense(Expense request)
         {
             var expense = await _iExpenseRepository.GetByIdAsync(request.Id);
-            if (expense != null && expense.Type != ExpenseType.PayOffDebt)
+            if (expense != null)
             {
-                expense.Description = request.Description;
-                expense.Date = request.Date;
-                expense.Amount = request.Amount;
+                if (expense.Type != ExpenseType.PayOffDebt)
+                {
+                    expense.Description = request.Description;
+                    expense.Date = request.Date;
+                    expense.Amount = request.Amount;
+                }
+                else if (expense.Type == ExpenseType.PayOffDebt)
+                {
+                    expense.Description = request.Description;
+                    expense.Date = request.Date;
+                    expense.Amount = request.Amount;
+                    expense.DebtId = request.DebtId;
+                }
+                _iExpenseRepository.Update(expense);
             }
-            else if (expense != null && expense.Type == ExpenseType.PayOffDebt)
-            {
-                expense.Description = request.Description;
-                expense.Date = request.Date;
-                expense.Amount = request.Amount;
-                expense.DebtId = request.DebtId;
-            }
-            _iExpenseRepository.Update(expense);
-        }
-
-
-        private string GetTitleFromQuery(ExpenseQueryParameter query)
-        {
-            var parts = new List<string>();
-            if (query.Day.HasValue)
-            {
-                parts.Add($"ngày: {query.Day.Value}");
-            }
-            if (query.Month.HasValue)
-            {
-                parts.Add($"tháng: {query.Month.Value}");
-            }
-            if (query.Year.HasValue)
-            {
-                parts.Add($"năm: {query.Year.Value}");
-            }
-            if (parts.Count == 0)
-            {
-                return "Toàn bộ danh sách chi tiêu";
-            }
-            return "Danh sách chi tiêu " + string.Join(" ", parts);
         }
     }
 }
