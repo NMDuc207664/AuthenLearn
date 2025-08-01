@@ -168,7 +168,16 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     }
     private void OpenDeleteDialog(Model.Expense expense)
     {
-        Exp = expense;
+        Exp = new Model.Expense
+        {
+            Id = expense.Id,
+            Description = expense.Description,
+            Amount = expense.Amount,
+            Date = expense.Date,
+            Type = expense.Type,
+            DebtId = expense.DebtId,
+            Debt = expense.Debt
+        };
         showDeleteDialog = true;
     }
     private void CloseDeleteDialog()
@@ -248,17 +257,15 @@ new() { Value = "Dư nợ", Text = "Dư nợ" }
     }
     public async Task DeleteExpense(Guid expenseId)
     {
-        var Exp = Expenses.FirstOrDefault(e => e.Id == expenseId);
-        Console.WriteLine($"Exp: {Exp}");
         var debtId = Exp?.DebtId ?? Guid.Empty;
         var ExpenseTypes = Exp?.Type.ToString();
+
         Console.WriteLine($"debtId: {debtId}");
         Console.WriteLine($"ExpenseTypes: {ExpenseTypes}");
+        Console.WriteLine($"Expense Id: {Exp?.Id}");
         await iExpenseService.DeleteExpense(expenseId);
-        if (debtId != Guid.Empty && ExpenseTypes == "PayOffDebt")
+        if (debtId != Guid.Empty && ExpenseTypes == "Debt")
         {
-            Console.WriteLine($"debtId____: {debtId}");
-            Console.WriteLine($"ExpenseTypes_______: {ExpenseTypes}");
             await debtComponent!.DeleteDebtFE(debtId);
         }
 
